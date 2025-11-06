@@ -65,22 +65,22 @@ def execute_insert_update(query, params=None):
         return False
 
 # Sidebar Navigation
-st.sidebar.title("🚀 Navigation")
+st.sidebar.title("Navigation")
 st.sidebar.markdown("---")
 
 page = st.sidebar.radio("Go to", [
-    "🏠 Dashboard", 
-    "🏢 Startups", 
-    "👥 Investors", 
-    "💰 Funding Rounds",
-    "🎯 Founders",
-    "📊 Analytics",
-    "🤝 Acquisitions"
+    "Dashboard", 
+    "Startups", 
+    "Investors", 
+    "Funding Rounds",
+    "Founders",
+    "Analytics",
+    "Acquisitions"
 ])
 
 # ===== DASHBOARD =====
-if page == "🏠 Dashboard":
-    st.markdown(f"<h1 class='header-style'>📊 {APP_TITLE}</h1>", unsafe_allow_html=True)
+if page == "Dashboard":
+    st.markdown(f"<h1 class='header-style'>{APP_TITLE}</h1>", unsafe_allow_html=True)
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -90,18 +90,18 @@ if page == "🏠 Dashboard":
             cursor = conn.cursor()
             
             cursor.execute("SELECT COUNT(*) FROM startups")
-            col1.metric("🏢 Total Startups", cursor.fetchone()[0])
+            col1.metric("Total Startups", cursor.fetchone()[0])
             
             cursor.execute("SELECT COALESCE(SUM(Amount), 0) FROM funding_rounds")
             result = cursor.fetchone()[0]
             total_funding = float(result) if result else 0
-            col2.metric("💵 Total Funding", f"₹{total_funding/1e7:.1f}Cr")
+            col2.metric("Total Funding", f"₹{total_funding/1e7:.1f}Cr")
             
             cursor.execute("SELECT COUNT(*) FROM investors")
-            col3.metric("👥 Total Investors", cursor.fetchone()[0])
+            col3.metric("Total Investors", cursor.fetchone()[0])
             
             cursor.execute("SELECT COUNT(*) FROM acquisitions")
-            col4.metric("🤝 Acquisitions", cursor.fetchone()[0])
+            col4.metric("Acquisitions", cursor.fetchone()[0])
             
             cursor.close()
             conn.close()
@@ -110,7 +110,7 @@ if page == "🏠 Dashboard":
     
     st.markdown("---")
     
-    st.subheader("💰 Recent Funding Rounds (Top 10)")
+    st.subheader("Recent Funding Rounds (Top 10)")
     query = """
     SELECT s.Name AS Startup, fr.Date, fr.Amount, fr.Stage
     FROM funding_rounds fr
@@ -125,7 +125,7 @@ if page == "🏠 Dashboard":
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("🏭 Industry Distribution")
+        st.subheader("Industry Distribution")
         query = """
         SELECT i.Sector, COUNT(s.Startup_ID) as Count
         FROM industries i
@@ -139,7 +139,7 @@ if page == "🏠 Dashboard":
             st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.subheader("📈 Funding by Stage")
+        st.subheader("Funding by Stage")
         query = """
         SELECT Stage, SUM(Amount) as Total
         FROM funding_rounds
@@ -152,10 +152,10 @@ if page == "🏠 Dashboard":
             st.plotly_chart(fig, use_container_width=True)
 
 # ===== STARTUPS =====
-elif page == "🏢 Startups":
-    st.markdown("<h1 class='header-style'>🏢 Startup Management</h1>", unsafe_allow_html=True)
+elif page == "Startups":
+    st.markdown("<h1 class='header-style'> Startup Management</h1>", unsafe_allow_html=True)
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📋 View All", "➕ Add New", "✏️ Update", "🗑️ Delete"])
+    tab1, tab2, tab3, tab4 = st.tabs(["View All", "Add New", "Update", "Delete"])
     
     with tab1:
         st.subheader("All Startups")
@@ -193,13 +193,13 @@ elif page == "🏢 Startups":
                     industries_dict = dict(zip(industries_df['Sector'], industries_df['Industry_ID']))
                     industry = st.selectbox("Industry", list(industries_dict.keys()))
             
-            if st.form_submit_button("✅ Add Startup", use_container_width=True):
+            if st.form_submit_button("Add Startup", use_container_width=True):
                 if not name:
                     st.error("Name is required")
                 else:
                     query = "INSERT INTO startups (Startup_ID, Name, Founded_Year, City_ID, Industry_ID) VALUES (%s, %s, %s, %s, %s)"
                     if execute_insert_update(query, (startup_id, name, founded_year, cities_dict[city], industries_dict[industry])):
-                        msg = st.success("✅ Added!")
+                        msg = st.success("Added!")
                         time.sleep(2)
                         st.rerun()
     
@@ -271,10 +271,10 @@ elif page == "🏢 Startups":
                             selected_industry = st.selectbox("Industry", list(industries_dict.keys()), index=industry_index, key="update_industry")
                     
                     # SUBMIT BUTTON HERE
-                    if st.form_submit_button("✅ Update Startup", use_container_width=True):
+                    if st.form_submit_button("Update Startup", use_container_width=True):
                         query = "UPDATE startups SET Name = %s, Founded_Year = %s, City_ID = %s, Industry_ID = %s WHERE Startup_ID = %s"
                         if execute_insert_update(query, (new_name, int(new_year), int(cities_dict[selected_city]), int(industries_dict[selected_industry]), startup_id)):
-                            msg = st.success("✅ Updated!")
+                            msg = st.success("Updated!")
                             time.sleep(2)
                             st.rerun()
     
@@ -290,15 +290,15 @@ elif page == "🏢 Startups":
             
             if st.button("🗑️ Delete", use_container_width=True):
                 if execute_insert_update("DELETE FROM startups WHERE Startup_ID = %s", (startup_id,)):
-                    msg = st.success("✅ Deleted!")
+                    msg = st.success("Deleted!")
                     time.sleep(2)
                     st.rerun()
 
 # ===== INVESTORS =====
-elif page == "👥 Investors":
-    st.markdown("<h1 class='header-style'>👥 Investor Management</h1>", unsafe_allow_html=True)
+elif page == "Investors":
+    st.markdown("<h1 class='header-style'>Investor Management</h1>", unsafe_allow_html=True)
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📋 View All", "➕ Add New", "✏️ Update", "🗑️ Delete"])
+    tab1, tab2, tab3, tab4 = st.tabs(["View All", "Add New", "Update", "Delete"])
     
     with tab1:
         st.subheader("All Investors")
@@ -330,13 +330,13 @@ elif page == "👥 Investors":
                     countries_dict = dict(zip(countries_df['Name'], countries_df['Country_ID']))
                     country = st.selectbox("Country", list(countries_dict.keys()))
             
-            if st.form_submit_button("✅ Add Investor", use_container_width=True):
+            if st.form_submit_button("Add Investor", use_container_width=True):
                 if not name:
                     st.error("Name is required")
                 else:
                     query = "INSERT INTO investors (Investor_ID, Name, Type, Country_ID) VALUES (%s, %s, %s, %s)"
                     if execute_insert_update(query, (int(investor_id), name, investor_type, int(countries_dict[country]))):
-                        msg = st.success("✅ Added!")
+                        msg = st.success("Added!")
                         time.sleep(2)
                         st.rerun()
     
@@ -392,16 +392,16 @@ elif page == "👥 Investors":
                             
                             selected_country = st.selectbox("Country", list(countries_dict.keys()), index=country_index, key="update_investor_country")
                     
-                    if st.form_submit_button("✅ Update Investor", use_container_width=True):
+                    if st.form_submit_button("Update Investor", use_container_width=True):
                         query = "UPDATE investors SET Name = %s, Type = %s, Country_ID = %s WHERE Investor_ID = %s"
                         if execute_insert_update(query, (new_name, new_type, int(countries_dict[selected_country]), investor_id)):
-                            msg = st.success("✅ Updated!")
+                            msg = st.success("Updated!")
                             time.sleep(2)
                             st.rerun()
     
     with tab4:
         st.subheader("Delete Investor")
-        st.warning("⚠️ This will delete the investor!")
+        st.warning("This will delete the investor!")
         investors_query = "SELECT Investor_ID, Name FROM investors ORDER BY Investor_ID"
         investors_df = execute_query(investors_query)
         
@@ -411,15 +411,15 @@ elif page == "👥 Investors":
             
             if st.button("🗑️ Delete Investor", use_container_width=True):
                 if execute_insert_update("DELETE FROM investors WHERE Investor_ID = %s", (investor_id,)):
-                    msg = st.success("✅ Deleted!")
+                    msg = st.success("Deleted!")
                     time.sleep(2)
                     st.rerun()
 
 # ===== FUNDING ROUNDS =====
-elif page == "💰 Funding Rounds":
-    st.markdown("<h1 class='header-style'>💰 Funding Rounds</h1>", unsafe_allow_html=True)
+elif page == "Funding Rounds":
+    st.markdown("<h1 class='header-style'>Funding Rounds</h1>", unsafe_allow_html=True)
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📋 View All", "➕ Add New", "✏️ Update", "🗑️ Delete"])
+    tab1, tab2, tab3, tab4 = st.tabs(["View All", "Add New", "Update", "Delete"])
     
     with tab1:
         st.subheader("All Funding Rounds")
@@ -447,10 +447,10 @@ elif page == "💰 Funding Rounds":
                 startups_dict = dict(zip(startups_df['Name'], startups_df['Startup_ID']))
                 startup = st.selectbox("Startup", list(startups_dict.keys()), key="funding_startup")
             
-            if st.form_submit_button("✅ Add Funding", use_container_width=True):
+            if st.form_submit_button("Add Funding", use_container_width=True):
                 query = "INSERT INTO funding_rounds (Round_ID, Startup_ID, Date, Amount, Stage) VALUES (%s, %s, %s, %s, %s)"
                 if execute_insert_update(query, (int(round_id), int(startups_dict[startup]), funding_date, float(amount), stage)):
-                    msg = st.success("✅ Added!")
+                    msg = st.success("Added!")
                     time.sleep(2)
                     st.rerun()
     
@@ -494,10 +494,10 @@ elif page == "💰 Funding Rounds":
                             current_startup_name = startup_result.iloc[0]['Name'] if startup_result is not None and len(startup_result) > 0 else list(startups_dict.keys())[0]
                             selected_startup = st.selectbox("Startup", list(startups_dict.keys()), index=list(startups_dict.keys()).index(current_startup_name) if current_startup_name in startups_dict else 0, key="update_funding_startup")
                     
-                    if st.form_submit_button("✅ Update Funding", use_container_width=True):
+                    if st.form_submit_button("Update Funding", use_container_width=True):
                         query = "UPDATE funding_rounds SET Date = %s, Amount = %s, Stage = %s, Startup_ID = %s WHERE Round_ID = %s"
                         if execute_insert_update(query, (new_date, float(new_amount), new_stage, int(startups_dict[selected_startup]), round_id)):
-                            msg = st.success("✅ Updated!")
+                            msg = st.success("Updated!")
                             time.sleep(2)
                             st.rerun()
     
@@ -514,15 +514,15 @@ elif page == "💰 Funding Rounds":
             
             if st.button("🗑️ Delete Funding Round", use_container_width=True):
                 if execute_insert_update("DELETE FROM funding_rounds WHERE Round_ID = %s", (round_id,)):
-                    msg = st.success("✅ Deleted!")
+                    msg = st.success("Deleted!")
                     time.sleep(2)
                     st.rerun()
 
 # ===== FOUNDERS =====
-elif page == "🎯 Founders":
-    st.markdown("<h1 class='header-style'>🎯 Founders</h1>", unsafe_allow_html=True)
+elif page == "Founders":
+    st.markdown("<h1 class='header-style'>Founders</h1>", unsafe_allow_html=True)
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📋 View All", "➕ Add New", "✏️ Update", "🗑️ Delete"])
+    tab1, tab2, tab3, tab4 = st.tabs(["View All", "Add New", "Update", "Delete"])
     
     with tab1:
         st.subheader("All Founders")
@@ -550,10 +550,10 @@ elif page == "🎯 Founders":
                 startups_dict = dict(zip(startups_df['Name'], startups_df['Startup_ID']))
                 startup = st.selectbox("Startup", list(startups_dict.keys()), key="founder_startup_add")
             
-            if st.form_submit_button("✅ Add Founder", use_container_width=True):
+            if st.form_submit_button("Add Founder", use_container_width=True):
                 query = "INSERT INTO founders (Founder_ID, Name, Startup_ID, Role, LinkedIn_URL) VALUES (%s, %s, %s, %s, %s)"
                 if execute_insert_update(query, (int(founder_id), name, int(startups_dict[startup]), role, linkedin_url)):
-                    msg = st.success("✅ Added!")
+                    msg = st.success("Added!")
                     time.sleep(2)
                     st.rerun()
     
@@ -587,16 +587,16 @@ elif page == "🎯 Founders":
                         current_startup_name = startup_result.iloc[0]['Name'] if startup_result is not None and len(startup_result) > 0 else list(startups_dict.keys())[0]
                         selected_startup = st.selectbox("Startup", list(startups_dict.keys()), index=list(startups_dict.keys()).index(current_startup_name) if current_startup_name in startups_dict else 0, key="update_founder_startup")
                     
-                    if st.form_submit_button("✅ Update Founder", use_container_width=True):
+                    if st.form_submit_button("Update Founder", use_container_width=True):
                         query = "UPDATE founders SET Name = %s, Role = %s, LinkedIn_URL = %s, Startup_ID = %s WHERE Founder_ID = %s"
                         if execute_insert_update(query, (new_name, new_role, new_linkedin, int(startups_dict[selected_startup]), founder_id)):
-                            msg = st.success("✅ Updated!")
+                            msg = st.success("Updated!")
                             time.sleep(2)
                             st.rerun()
     
     with tab4:
         st.subheader("Delete Founder")
-        st.warning("⚠️ This will delete the founder!")
+        st.warning("This will delete the founder!")
         founders_query = "SELECT Founder_ID, Name FROM founders ORDER BY Founder_ID"
         founders_df = execute_query(founders_query)
         
@@ -604,15 +604,15 @@ elif page == "🎯 Founders":
             selected = st.selectbox("Select Founder", founders_df['Name'].tolist(), key="delete_founder")
             founder_id = int(founders_df[founders_df['Name'] == selected]['Founder_ID'].values[0])
             
-            if st.button("🗑️ Delete Founder", use_container_width=True):
+            if st.button("Delete Founder", use_container_width=True):
                 if execute_insert_update("DELETE FROM founders WHERE Founder_ID = %s", (founder_id,)):
-                    msg = st.success("✅ Deleted!")
+                    msg = st.success("Deleted!")
                     time.sleep(2)
                     st.rerun()
 
 # ===== ANALYTICS =====
-elif page == "📊 Analytics":
-    st.markdown("<h1 class='header-style'>📊 Analytics & Insights</h1>", unsafe_allow_html=True)
+elif page == "Analytics":
+    st.markdown("<h1 class='header-style'>Analytics & Insights</h1>", unsafe_allow_html=True)
     
     tab1, tab2, tab3, tab4 = st.tabs(["Industry", "Top Startups", "Funding", "Cities"])
     
@@ -675,10 +675,10 @@ elif page == "📊 Analytics":
             st.plotly_chart(fig, use_container_width=True)
 
 # ===== ACQUISITIONS =====
-elif page == "🤝 Acquisitions":
-    st.markdown("<h1 class='header-style'>🤝 Acquisitions</h1>", unsafe_allow_html=True)
+elif page == "Acquisitions":
+    st.markdown("<h1 class='header-style'>Acquisitions</h1>", unsafe_allow_html=True)
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📋 View All", "➕ Add New", "✏️ Update", "🗑️ Delete"])
+    tab1, tab2, tab3, tab4 = st.tabs(["View All", "Add New", "Update", "Delete"])
     
     with tab1:
         st.subheader("All Acquisitions")
@@ -708,13 +708,13 @@ elif page == "🤝 Acquisitions":
                 acquirer = st.selectbox("Acquirer", list(startups_dict.keys()), key="acq_acquirer_add")
                 target = st.selectbox("Target", list(startups_dict.keys()), key="acq_target_add")
             
-            if st.form_submit_button("✅ Add Acquisition", use_container_width=True):
+            if st.form_submit_button("Add Acquisition", use_container_width=True):
                 if acquirer == target:
-                    st.error("❌ Cannot acquire itself!")
+                    st.error("Cannot acquire itself!")
                 else:
                     query = "INSERT INTO acquisitions (AcquisitionID, Acquirer_Startup_ID, Target_Startup_ID, Date, Amount) VALUES (%s, %s, %s, %s, %s)"
                     if execute_insert_update(query, (int(acq_id), int(startups_dict[acquirer]), int(startups_dict[target]), acq_date, float(amount))):
-                        msg = st.success("✅ Added!")
+                        msg = st.success("Added!")
                         time.sleep(2)
                         st.rerun()
 
@@ -752,19 +752,19 @@ elif page == "🤝 Acquisitions":
                         selected_acquirer = st.selectbox("Acquirer", list(startups_dict.keys()), index=list(startups_dict.keys()).index(current['Acquirer']) if current['Acquirer'] in startups_dict else 0, key="update_acq_acquirer")
                         selected_target = st.selectbox("Target", list(startups_dict.keys()), index=list(startups_dict.keys()).index(current['Target']) if current['Target'] in startups_dict else 0, key="update_acq_target")
                         
-                        if st.form_submit_button("✅ Update Acquisition", use_container_width=True):
+                        if st.form_submit_button("Update Acquisition", use_container_width=True):
                             if selected_acquirer == selected_target:
-                                st.error("❌ Cannot acquire itself!")
+                                st.error("Cannot acquire itself!")
                             else:
                                 query = "UPDATE acquisitions SET Acquirer_Startup_ID = %s, Target_Startup_ID = %s, Date = %s, Amount = %s WHERE Acquirer_Startup_ID = %s AND Target_Startup_ID = %s AND Date = %s"
                                 if execute_insert_update(query, (int(startups_dict[selected_acquirer]), int(startups_dict[selected_target]), new_date, float(new_amount), int(startups_dict[current['Acquirer']]), int(startups_dict[current['Target']]), current['Date'])):
-                                    msg = st.success("✅ Updated!")
+                                    msg = st.success("Updated!")
                                     time.sleep(2)
                                     st.rerun()
     
     with tab4:
         st.subheader("Delete Acquisition")
-        st.warning("⚠️ This will delete the acquisition!")
+        st.warning("This will delete the acquisition!")
         
         acqs_query = """
         SELECT s1.Name AS Acquirer, s2.Name AS Target, a.Date, a.Amount
@@ -779,7 +779,7 @@ elif page == "🤝 Acquisitions":
             acq_options = [f"{row['Acquirer']} → {row['Target']}" for _, row in acqs_df.iterrows()]
             selected_acq = st.selectbox("Select Acquisition", acq_options, key="delete_acq_select")
             
-            if st.button("🗑️ Delete Acquisition", use_container_width=True):
+            if st.button("Delete Acquisition", use_container_width=True):
                 sel_idx = acq_options.index(selected_acq)
                 current = acqs_df.iloc[sel_idx]
                 
@@ -788,6 +788,6 @@ elif page == "🤝 Acquisitions":
                 startups_dict = dict(zip(startups_df['Name'], startups_df['Startup_ID']))
                 
                 if execute_insert_update("DELETE FROM acquisitions WHERE Acquirer_Startup_ID = %s AND Target_Startup_ID = %s AND Date = %s", (int(startups_dict[current['Acquirer']]), int(startups_dict[current['Target']]), current['Date'])):
-                    msg = st.success("✅ Deleted!")
+                    msg = st.success("Deleted!")
                     time.sleep(2)
                     st.rerun()
