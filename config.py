@@ -17,5 +17,5 @@ DB_CONFIG = {
     'database': 'mini_project'
 }
 
-APP_TITLE = "🚀 Indian Startup Ecosystem Analytics Platform"
-APP_ICON = "🚀"
+APP_TITLE = "Indian Startup Ecosystem Analytics Platform"
+APP_ICON = ""
