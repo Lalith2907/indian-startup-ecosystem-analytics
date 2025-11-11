@@ -614,7 +614,7 @@ elif page == "Founders":
 elif page == "Analytics":
     st.markdown("<h1 class='header-style'>Analytics & Insights</h1>", unsafe_allow_html=True)
     
-    tab1, tab2, tab3, tab4 = st.tabs(["Industry", "Top Startups", "Funding", "Cities"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Industry", "Top Startups", "Funding", "Cities", "Advanced Queries"])
     
     with tab1:
         st.subheader("Funding by Industry")
@@ -674,6 +674,162 @@ elif page == "Analytics":
             fig = px.bar(df, x='City', y='Startups', title='Startups by City')
             st.plotly_chart(fig, use_container_width=True)
 
+    with tab5:
+        st.subheader("Advanced SQL Queries")
+        
+        # ===== 1. NESTED QUERY (ALREADY EXISTS - KEEP THIS) =====
+        st.markdown("### Nested Query: Startups with Above-Average Funding")
+        if st.button("Execute Nested Query", key="nested_query"):
+            query = """
+            SELECT s.Name AS Startup_Name, 
+                   s.Founded_Year, 
+                   c.Name AS City,
+                   (SELECT SUM(Amount) FROM funding_rounds WHERE Startup_ID = s.Startup_ID) AS Total_Funding
+            FROM startups s
+            JOIN cities c ON s.City_ID = c.City_ID
+            WHERE s.Startup_ID IN (
+                SELECT Startup_ID 
+                FROM funding_rounds 
+                WHERE Amount > (SELECT AVG(Amount) FROM funding_rounds)
+            )
+            ORDER BY Total_Funding DESC
+            """
+            df = execute_query(query)
+            if df is not None and len(df) > 0:
+                st.dataframe(df, use_container_width=True, hide_index=True)
+                avg_query = "SELECT AVG(Amount) AS Avg_Funding FROM funding_rounds"
+                avg_df = execute_query(avg_query)
+                if avg_df is not None:
+                    st.info(f"Average Funding: ₹{avg_df.iloc[0]['Avg_Funding']:,.2f}")
+            else:
+                st.warning("No data found")
+        
+        st.markdown("---")  # ADD THIS LINE
+        
+        # ===== 2. JOIN QUERY (ADD THIS) =====
+        st.markdown("### Join Query: Complete Startup Ecosystem View")
+        
+        col1, col2 = st.columns(2)
+        
+        industries_df = execute_query("SELECT DISTINCT Sector FROM industries ORDER BY Sector")
+        industry_list = ["All"] + list(industries_df['Sector']) if industries_df is not None else ["All"]
+        
+        with col1:
+            industry_filter = st.selectbox("Filter by Industry", industry_list, key="join_industry")
+        with col2:
+            stage_filter = st.selectbox("Filter by Stage", 
+                                       ["All", "Pre-Seed", "Seed", "Series A", "Series B", "Series C", "Series D", "IPO"],
+                                       key="join_stage")
+        
+        if st.button("Execute Join Query", key="join_query"):
+            query = """
+            SELECT 
+                s.Name AS Startup_Name,
+                i.Sector AS Industry,
+                c.Name AS City,
+                fr.Stage AS Funding_Stage,
+                fr.Amount AS Funding_Amount,
+                fr.Date AS Funding_Date
+            FROM startups s
+            LEFT JOIN industries i ON s.Industry_ID = i.Industry_ID
+            LEFT JOIN cities c ON s.City_ID = c.City_ID
+            LEFT JOIN funding_rounds fr ON s.Startup_ID = fr.Startup_ID
+            WHERE 1=1
+            """
+            
+            if industry_filter != "All":
+                query += f" AND i.Sector = '{industry_filter}'"
+            if stage_filter != "All":
+                query += f" AND fr.Stage = '{stage_filter}'"
+            
+            query += " ORDER BY fr.Date DESC LIMIT 50"
+            
+            df = execute_query(query)
+            if df is not None and len(df) > 0:
+                st.dataframe(df, use_container_width=True, hide_index=True)
+                st.success(f"Found {len(df)} records")
+            else:
+                st.warning("No data found with selected filters")
+        
+        st.markdown("---")  # ADD THIS LINE
+        
+        # ===== 3. AGGREGATE QUERY (ADD THIS) =====
+        st.markdown("### Aggregate Query: Industry Statistics Dashboard")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            group_by = st.selectbox("Group By", ["Industry", "City", "Funding Stage"], key="agg_group")
+        with col2:
+            metric = st.selectbox("Metric", ["Total Funding", "Avg Funding", "Count"], key="agg_metric")
+        with col3:
+            top_n = st.slider("Show Top", 5, 20, 10, key="agg_top")
+        
+        if st.button("Execute Aggregate Query", key="agg_query"):
+            if group_by == "Industry":
+                query = f"""
+                SELECT 
+                    i.Sector AS Category,
+                    COUNT(DISTINCT s.Startup_ID) AS Total_Startups,
+                    COUNT(DISTINCT fr.Round_ID) AS Total_Rounds,
+                    COALESCE(SUM(fr.Amount), 0) AS Total_Funding,
+                    COALESCE(AVG(fr.Amount), 0) AS Avg_Funding,
+                    COALESCE(MIN(fr.Amount), 0) AS Min_Funding,
+                    COALESCE(MAX(fr.Amount), 0) AS Max_Funding
+                FROM industries i
+                LEFT JOIN startups s ON i.Industry_ID = s.Industry_ID
+                LEFT JOIN funding_rounds fr ON s.Startup_ID = fr.Startup_ID
+                GROUP BY i.Sector
+                ORDER BY Total_Funding DESC
+                LIMIT {top_n}
+                """
+            elif group_by == "City":
+                query = f"""
+                SELECT 
+                    c.Name AS Category,
+                    COUNT(DISTINCT s.Startup_ID) AS Total_Startups,
+                    COUNT(DISTINCT fr.Round_ID) AS Total_Rounds,
+                    COALESCE(SUM(fr.Amount), 0) AS Total_Funding,
+                    COALESCE(AVG(fr.Amount), 0) AS Avg_Funding
+                FROM cities c
+                LEFT JOIN startups s ON c.City_ID = s.City_ID
+                LEFT JOIN funding_rounds fr ON s.Startup_ID = fr.Startup_ID
+                GROUP BY c.Name
+                ORDER BY Total_Funding DESC
+                LIMIT {top_n}
+                """
+            else:  # Funding Stage
+                query = f"""
+                SELECT 
+                    Stage AS Category,
+                    COUNT(*) AS Total_Rounds,
+                    COALESCE(SUM(Amount), 0) AS Total_Funding,
+                    COALESCE(AVG(Amount), 0) AS Avg_Funding,
+                    COALESCE(MIN(Amount), 0) AS Min_Funding,
+                    COALESCE(MAX(Amount), 0) AS Max_Funding
+                FROM funding_rounds
+                GROUP BY Stage
+                ORDER BY Total_Funding DESC
+                LIMIT {top_n}
+                """
+            
+            df = execute_query(query)
+            if df is not None and len(df) > 0:
+                st.dataframe(df, use_container_width=True, hide_index=True)
+                
+                # Visualization
+                col1, col2 = st.columns(2)
+                with col1:
+                    fig = px.bar(df, x='Category', y='Total_Funding', 
+                                title=f'Total Funding by {group_by}')
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                with col2:
+                    fig = px.pie(df, values='Total_Funding', names='Category',
+                                title=f'Funding Distribution by {group_by}')
+                    st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("No data found")
+
 # ===== ACQUISITIONS =====
 elif page == "Acquisitions":
     st.markdown("<h1 class='header-style'>Acquisitions</h1>", unsafe_allow_html=True)
@@ -721,7 +877,7 @@ elif page == "Acquisitions":
     
     with tab3:
         st.subheader("Update Acquisition")
-        st.info("ℹ️ View all acquisitions in 'View All' tab, then use their Acquirer name to update")
+        st.info("View all acquisitions in 'View All' tab, then use their Acquirer name to update")
         
         startups_query = "SELECT Startup_ID, Name FROM startups ORDER BY Name"
         startups_df = execute_query(startups_query)
